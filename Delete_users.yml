@@ -1,0 +1,31 @@
+---
+- name: AWX | Managed Bulk User Deletion
+  hosts: all
+  become: yes
+  vars:
+    # ค่านี้จะถูกส่งมาจาก Survey ใน AWX (แนะนำให้ตั้งชื่อตัวแปรเดียวกัน)
+    # ถ้าไม่ได้ระบุมาให้เป็นลิสต์ว่างไว้ก่อน
+    target_users: "{{ awx_user_list | default([]) }}"
+
+  tasks:
+    - name: "Validate if user list is provided"
+      ansible.builtin.fail:
+        msg: "Please provide at least one username in the 'awx_user_list' survey field."
+      when: target_users | length == 0
+
+    - name: "Bulk Removing Users from RHEL"
+      ansible.builtin.user:
+        name: "{{ item | trim }}"
+        state: absent
+        remove: yes   # ลบ Home Directory และ Mail Spool
+        force: yes    # บังคับลบแม้ User จะมี Process ค้างอยู่
+      loop: "{{ target_users }}"
+      register: user_results
+      ignore_errors: yes # ป้องกัน Playbook หยุดทำงานถ้าลบบางคนไม่สำเร็จ
+
+    - name: "Reporting Deletion Results"
+      ansible.builtin.debug:
+        msg: "User: {{ item.item }} | Status: {{ 'DELETED' if item.changed else 'NOT FOUND/FAILED' }}"
+      loop: "{{ user_results.results }}"
+      loop_control:
+        label: "{{ item.item }}"
