@@ -13,12 +13,12 @@
         password_var: password_user03
 
   vars_prompt:
-    - name: user01
+    - name: password_user01
       prompt: "Enter password for user01"
       private: yes
       confirm: yes
 
-    - name: user02
+    - name: password_user02
       prompt: "Enter password for user02"
       private: yes
       confirm: yes
