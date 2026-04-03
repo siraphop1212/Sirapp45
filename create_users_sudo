@@ -1,0 +1,55 @@
+---
+- name: Create users with wheel and sudo
+  hosts: all
+  become: true
+
+  vars:
+    create_users:
+      - name: user01
+        password_var: password_user01
+      - name: user02
+        password_var: password_user02
+      - name: user03
+        password_var: password_user03
+
+  vars_prompt:
+    - name: password_user01
+      prompt: "Enter password for user01"
+      private: yes
+      confirm: yes
+
+    - name: password_user02
+      prompt: "Enter password for user02"
+      private: yes
+      confirm: yes
+
+    - name: password_user03
+      prompt: "Enter password for user03"
+      private: yes
+      confirm: yes
+
+  tasks:
+    - name: Ensure wheel group exists
+      ansible.builtin.group:
+        name: wheel
+        state: present
+
+    - name: Create users and add to wheel
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        password: "{{ lookup('vars', item.password_var) | password_hash('sha512') }}"
+        shell: /bin/bash
+        groups: wheel
+        append: true
+        create_home: true
+        state: present
+      loop: "{{ create_users }}"
+
+    - name: Grant sudo to wheel group
+      ansible.builtin.copy:
+        dest: /etc/sudoers.d/wheel
+        content: "%wheel ALL=(ALL) ALL\n"
+        owner: root
+        group: root
+        mode: "0440"
+        validate: "/usr/sbin/visudo -cf %s"
