@@ -1,0 +1,39 @@
+---
+- name: Create_normal 
+  hosts: all
+  become: true
+
+  vars:
+    create_users:
+      - name: user01
+        password_var: password_user01
+      - name: user02
+        password_var: password_user02
+      - name: user03
+        password_var: password_user03
+
+  vars_prompt:
+    - name: user01
+      prompt: "Enter password for user01"
+      private: yes
+      confirm: yes
+
+    - name: user02
+      prompt: "Enter password for user02"
+      private: yes
+      confirm: yes
+
+    - name: password_user03
+      prompt: "Enter password for user03"
+      private: yes
+      confirm: yes
+
+  tasks:
+    - name: Create normal users
+      ansible.builtin.user:
+        name: "{{ item.name }}"
+        password: "{{ lookup('vars', item.password_var) | password_hash('sha512') }}"
+        shell: /bin/bash
+        create_home: true
+        state: present
+      loop: "{{ create_users }}"
